@@ -1,0 +1,18 @@
+{
+  "name": "mcp-security-evidence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "sample": "npm run build && node scripts/sample.mjs",
+    "dev": "wrangler dev --local"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "wrangler": "4.86.0",
+    "ajv": "8.17.1"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schema_version": "1",
+  "assessment_id": "e0e7ca24-a245-4b2c-9ae3-2417d38545b7",
+  "target": "https://mcp.customer.com/mcp",
+  "mode": "submitted-metadata",
+  "target_requests": 0,
+  "events": [
+    {
+      "schema_version": "1",
+      "event_id": "2e7c197a-d281-4727-9e66-9d3a7d60ab87",
+      "observed_at": "2026-10-21T08:18:27.773Z",
+      "source_type": "submitted_mcp_metadata",
+      "assessment_id": "e0e7ca24-a245-4b2c-9ae3-2417d38545b7",
+      "finding_type": "authentication_not_declared",
+      "severity": "high",
+      "evidence": {
+        "path": "/publicConfiguration/authentication",
+        "observation": "Submitted configuration declares no authentication."
+      },
+      "confidence": "medium",
+      "limitations": [
+        "Submitted metadata only; provenance and live server behavior are not verified.",
+        "Tool annotations are untrusted hints; no tools were invoked."
+      ],
+      "remediation": "Require authenticated access and enforce per-tool authorization.",
+      "content_hash": "sha256:8e4008843aeeb0425d27e51f8536cf72c55fc1bab63f816cd6363cf95053b6c8"
+    },
+    {
+      "schema_version": "1",
+      "event_id": "5b9447f0-b871-49d9-afaf-960e9f630b06",
+      "observed_at": "2026-10-21T08:18:27.773Z",
+      "source_type": "submitted_mcp_metadata",
+      "assessment_id": "e0e7ca24-a245-4b2c-9ae3-2417d38545b7",
+      "finding_type": "permissive_tool_schema",
+      "severity": "medium",
+      "evidence": {
+        "path": "/tools/0/inputSchema",
+        "observation": "Tool schema does not explicitly restrict inputs to a closed object."
+      },
+      "confidence": "medium",
+      "limitations": [
+        "Submitted metadata only; provenance and live server behavior are not verified.",
+        "Tool annotations are untrusted hints; no tools were invoked."
+      ],
+      "remediation": "Use an object schema with additionalProperties:false and validate inputs at runtime.",
+      "content_hash": "sha256:d9148da87fa3a20e63d10a8a7a87ef1ab907da37eb6d0efaa8f798351753dd7b"
+    },
+    {
+      "schema_version": "1",
+      "event_id": "1310fb91-2d6a-434d-91f0-1da7a2216820",
+      "observed_at": "2026-10-21T08:18:27.773Z",
+      "source_type": "submitted_mcp_metadata",
+      "assessment_id": "e0e7ca24-a245-4b2c-9ae3-2417d38545b7",
+      "finding_type": "tool_effects_unconfirmed",
+      "severity": "info",
+      "evidence": {
+        "path": "/tools/1/annotations",
+        "observation": "Tool is not explicitly annotated read-only."
+      },
+      "confidence": "medium",
+      "limitations": [
+        "Submitted metadata only; provenance and live server behavior are not verified.",
+        "Tool annotations are untrusted hints; no tools were invoked."
+      ],
+      "remediation": "Document tool effects and require explicit authorization for state-changing operations.",
+      "content_hash": "sha256:6d90181e424aa37d9f0e4fb01b17167de38785bafdc21255e96c534ffb5315a5"
+    },
+    {
+      "schema_version": "1",
+      "event_id": "c460c91e-70cf-4bdb-86d4-6afe38d3d61f",
+      "observed_at": "2026-10-21T08:18:27.773Z",
+      "source_type": "submitted_mcp_metadata",
+      "assessment_id": "e0e7ca24-a245-4b2c-9ae3-2417d38545b7",
+      "finding_type": "destructive_tool_advertised",
+      "severity": "medium",
+      "evidence": {
+        "path": "/tools/1/annotations/destructiveHint",
+        "observation": "Tool advertises destructive behavior."
+      },
+      "confidence": "medium",
+      "limitations": [
+        "Submitted metadata only; provenance and live server behavior are not verified.",
+        "Tool annotations are untrusted hints; no tools were invoked."
+      ],
+      "remediation": "Restrict access and require confirmation before invoking destructive tools.",
+      "content_hash": "sha256:bbd6025cfdae2119cec41d471001e5e8a39a3d2058e135f079fd34a6137c4b2d"
+    },
+    {
+      "schema_version": "1",
+      "event_id": "a3f612eb-acbc-4389-b11b-57882f00d381",
+      "observed_at": "2026-10-21T08:18:27.773Z",
+      "source_type": "submitted_mcp_metadata",
+      "assessment_id": "e0e7ca24-a245-4b2c-9ae3-2417d38545b7",
+      "finding_type": "assessment_scope",
+      "severity": "info",
+      "evidence": {
+        "path": "/",
+        "observation": "2 tool schemas reviewed; zero target requests made."
+      },
+      "confidence": "medium",
+      "limitations": [
+        "Submitted metadata only; provenance and live server behavior are not verified.",
+        "Tool annotations are untrusted hints; no tools were invoked."
+      ],
+      "remediation": "Validate findings with the system owner; this report is not a compliance certification.",
+      "content_hash": "sha256:c4df07deb90456e790b410e52da05f550d448ca45dede792ee7251a3ccb8079c"
+    }
+  ],
+  "report": "# MCP Security Evidence report\n\nMetadata-only review. No target was contacted.\n\n## authentication_not_declared (high)\n\nSubmitted configuration declares no authentication.\n\nRemediation: Require authenticated access and enforce per-tool authorization.\n\nLimitations: Submitted metadata only; provenance and live server behavior are not verified. Tool annotations are untrusted hints; no tools were invoked.\n\n## permissive_tool_schema (medium)\n\nTool schema does not explicitly restrict inputs to a closed object.\n\nRemediation: Use an object schema with additionalProperties:false and validate inputs at runtime.\n\nLimitations: Submitted metadata only; provenance and live server behavior are not verified. Tool annotations are untrusted hints; no tools were invoked.\n\n## tool_effects_unconfirmed (info)\n\nTool is not explicitly annotated read-only.\n\nRemediation: Document tool effects and require explicit authorization for state-changing operations.\n\nLimitations: Submitted metadata only; provenance and live server behavior are not verified. Tool annotations are untrusted hints; no tools were invoked.\n\n## destructive_tool_advertised (medium)\n\nTool advertises destructive behavior.\n\nRemediation: Restrict access and require confirmation before invoking destructive tools.\n\nLimitations: Submitted metadata only; provenance and live server behavior are not verified. Tool annotations are untrusted hints; no tools were invoked.\n\n## assessment_scope (info)\n\n2 tool schemas reviewed; zero target requests made.\n\nRemediation: Validate findings with the system owner; this report is not a compliance certification.\n\nLimitations: Submitted metadata only; provenance and live server behavior are not verified. Tool annotations are untrusted hints; no tools were invoked.\n"
+}
