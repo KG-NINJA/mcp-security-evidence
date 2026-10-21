@@ -1,0 +1,13 @@
+{
+  "mode": "submitted-metadata",
+  "target": "https://mcp.customer.com/mcp",
+  "authorization": { "subject": "synthetic-owner", "explicit_authorization": true },
+  "metadata": {
+    "capabilities": { "tools": {} },
+    "tools": [
+      { "name": "search", "inputSchema": { "type": "object", "properties": { "query": { "type": "string" } } }, "annotations": { "readOnlyHint": true } },
+      { "name": "delete_record", "inputSchema": { "type": "object", "additionalProperties": false }, "annotations": { "destructiveHint": true } }
+    ],
+    "publicConfiguration": { "authentication": "none", "transport": "https" }
+  }
+}
