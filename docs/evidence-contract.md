@@ -1,5 +1,7 @@
 # Evidence v1 compatibility
 
+**Historical, superseded proposal.** New output uses [common contract 2.0.0](../contracts/README.md). The original schema and synthetic legacy fixtures remain for historical validation; old versions/IDs/hashes are never silently rewritten. The implementation-time status below does not describe the current reconciliation. See [compatibility results](compatibility-results.md) for synthetic v2 checks and their production limitations.
+
 The interoperability boundary is a JSON event, independent of report envelope, storage and runtime. Required keys from Issue #1:
 
 `schema_version,event_id,observed_at,source_type,assessment_id,finding_type,severity,evidence,confidence,limitations,remediation,content_hash`

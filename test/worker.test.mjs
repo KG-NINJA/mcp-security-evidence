@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import Ajv from 'ajv';
+import Ajv from 'ajv/dist/2020.js';
+import formats from 'ajv-formats';
 import worker from '../dist/index.js';
 import { hash, canonical } from '../dist/evidence.js';
 import { validateTarget } from '../dist/safety.js';
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/authorized-request.json', import.meta.url)));
-const validate = new Ajv().compile(JSON.parse(readFileSync(new URL('../schema/evidence-v1.json', import.meta.url))));
+const ajv = new Ajv(); formats(ajv);
+const validate = ajv.compile(JSON.parse(readFileSync(new URL('../contracts/evidence-v2.schema.json', import.meta.url))));
 const token = 'synthetic-test-token-not-a-secret-12345';
 function env() { return { ASSESSMENT_TOKEN: token, AUTHORIZED_SUBJECT: 'synthetic-owner', AUTHORIZED_TARGET: fixture.target, RATE_LIMITER: { getByName: () => ({ fetch: async () => new Response(null, { status: 204 }) }) } }; }
 function request(body = fixture, path = '/assessments', auth = token) {
@@ -18,7 +20,7 @@ test('health explicitly disables probing and commerce', async () => {
 });
 test('authorized synthetic sample emits schema-valid, integrity-verifiable evidence', async () => {
  const r = await worker.fetch(request(), env()); assert.equal(r.status, 200);
- const b = await r.json(); assert.equal(b.target_requests, 0); assert.equal(b.events.length, 5);
+ const b = await r.json(); assert.equal(b.schema_version, '2.0.0'); assert.equal(b.target_requests, 0); assert.equal(b.events.length, 5);
  assert.deepEqual(b.events.map(e => e.finding_type), ['authentication_not_declared', 'permissive_tool_schema', 'tool_effects_unconfirmed', 'destructive_tool_advertised', 'assessment_scope']);
  for (const e of b.events) { assert.ok(validate(e), JSON.stringify(validate.errors)); const { content_hash, ...body } = e; assert.equal(content_hash, await hash(body)); assert.notEqual(content_hash, await hash({ ...body, severity: 'low' })); }
  assert.match(b.report, /No target was contacted/); assert.equal(r.headers.get('cache-control'), 'no-store');
