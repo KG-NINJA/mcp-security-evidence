@@ -1,4 +1,5 @@
 import { assess, renderReport, type Metadata } from './evidence.js';
+import { EVIDENCE_VERSION } from './evidence-contract.js';
 import { tokenMatches, validateTarget, type Env } from './safety.js';
 const MAX_BYTES = 64 * 1024;
 const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
@@ -82,7 +83,7 @@ export default {
     const assessmentId = crypto.randomUUID();
     const events = await assess(body.metadata, assessmentId, new Date().toISOString());
     if (path === '/report') return new Response(renderReport(events), { headers: { ...headers, 'Content-Type': 'text/markdown; charset=utf-8' } });
-    return response(200, { schema_version: '1', assessment_id: assessmentId, target, mode: body.mode, target_requests: 0, events, report: renderReport(events) });
+    return response(200, { schema_version: EVIDENCE_VERSION, assessment_id: assessmentId, target, mode: body.mode, target_requests: 0, events, report: renderReport(events) });
   },
 };
 

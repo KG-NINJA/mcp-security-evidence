@@ -1,23 +1,8 @@
-export type Severity = 'info' | 'low' | 'medium' | 'high';
-export interface Evidence {
-  schema_version: '1'; event_id: string; observed_at: string;
-  source_type: 'submitted_mcp_metadata'; assessment_id: string;
-  finding_type: string; severity: Severity;
-  evidence: { path: string; observation: string };
-  confidence: 'high' | 'medium' | 'low'; limitations: string[];
-  remediation: string; content_hash: string;
-}
-export function canonical(value: unknown): string {
-  if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
-  if (value !== null && typeof value === 'object') {
-    const o = value as Record<string, unknown>;
-    return '{' + Object.keys(o).sort().map(k => JSON.stringify(k) + ':' + canonical(o[k])).join(',') + '}';
-  }
-  return JSON.stringify(value);
-}
+import { EVIDENCE_VERSION, digest, sealEvidence, type MetadataEvidence, type Severity } from './evidence-contract.js';
+export { canonical, verifyEvidence, type Severity } from './evidence-contract.js';
+export type Evidence = MetadataEvidence;
 export async function hash(value: unknown): Promise<string> {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical(value)));
-  return 'sha256:' + Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
+  return 'sha256:' + await digest(value);
 }
 export type Metadata = {
   capabilities: Record<string, unknown>;
@@ -27,14 +12,14 @@ export type Metadata = {
 export async function assess(metadata: Metadata, assessmentId: string, now: string): Promise<Evidence[]> {
   const findings: Evidence[] = [];
   async function add(finding_type: string, severity: Severity, path: string, observation: string, remediation: string) {
-    const body: Omit<Evidence, 'content_hash'> = {
-      schema_version: '1', event_id: crypto.randomUUID(), observed_at: now,
+    const body: Omit<Evidence, 'event_id' | 'content_hash'> = {
+      schema_version: EVIDENCE_VERSION, observed_at: now,
       source_type: 'submitted_mcp_metadata', assessment_id: assessmentId, finding_type, severity,
-      evidence: { path, observation }, confidence: 'medium',
+      evidence: { path, observation }, confidence: { scale: 'ordinal', value: 'medium' },
       limitations: ['Submitted metadata only; provenance and live server behavior are not verified.',
         'Tool annotations are untrusted hints; no tools were invoked.'], remediation,
     };
-    findings.push({ ...body, content_hash: await hash(body) });
+    findings.push(await sealEvidence(body));
   }
   if (metadata.publicConfiguration.authentication === 'none')
     await add('authentication_not_declared', 'high', '/publicConfiguration/authentication', 'Submitted configuration declares no authentication.', 'Require authenticated access and enforce per-tool authorization.');
