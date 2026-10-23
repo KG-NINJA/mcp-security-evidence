@@ -1,6 +1,6 @@
 {
   "name": "mcp-security-evidence",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,8 @@
     "test": "npm run build && node --test test/*.test.mjs",
     "sample": "npm run build && node scripts/sample.mjs",
     "dev": "wrangler dev --local",
-    "test:interop": "node scripts/verify-interop.mjs"
+    "test:interop": "node scripts/verify-interop.mjs",
+    "verify:evidence": "npm run build --silent && node scripts/verify-evidence.mjs"
   },
   "devDependencies": {
     "ajv": "8.17.1",

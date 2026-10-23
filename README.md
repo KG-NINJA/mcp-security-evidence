@@ -46,6 +46,12 @@ Worker `fetch` does not provide a supported per-request public-IP pinning mechan
 
 Each request is capped at 64 KiB, depth 20, 50 unique tools and a 2-second body-read deadline. No external requests, execution, callbacks, mutation tests or remote tool calls occur. Reports are advisory: schema permissiveness and annotations do not establish exploitable vulnerabilities.
 
+## Verify JSON and prevent compatibility drift
+
+Service 0.3.0 adds a bounded, offline verifier while keeping evidence contract 2.0.0 unchanged. Run `npm run --silent verify:evidence -- fixtures/verify-example.json` (or pass an event file / `-` for stdin). It rejects duplicate keys, invalid UTF-8/JSON, oversized or deeply nested inputs, unsupported versions and integrity failures using fixed error codes, without echoing input data. No verification endpoint, import or automatic response action is enabled.
+
+The separate **Evidence interoperability** GitHub Actions job tests each change against a pinned reviewed peer commit, then saves a JSON report identifying the actual revisions, compiled modules, contract hashes and results. Existing per-service CI and runtime independence remain intact. See the [verification guide](docs/verification-guide.md) for limits, API/CLI usage, exit codes, peer pins and artifact retention.
+
 ## Evidence contract
 
 New output uses [common evidence contract 2.0.0](contracts/README.md) and [JSON Schema](contracts/evidence-v2.schema.json), including the JSON report wrapper's `schema_version`. Service 0.2.0 is a breaking API change: event IDs are now deterministic 64-character content digests, and qualitative confidence retains its original value inside `{scale: "ordinal", value: "medium"}`. The contract also specifies the honeypot profile without converting its numeric score into an invented ordinal. Both profiles share identical canonical encoding, event-ID and `sha256:`-prefixed content-hash rules. Assessment IDs/timestamps still vary between independent invocations; finding rules remain deterministic. Hashes do not prove origin, authorization or authenticity.
