@@ -16,12 +16,12 @@ npm ci --ignore-scripts
 npm test
 npm run case-study
 npm run lab:authz
+npm run lab:http
 ```
 
 This generates ignored `artifacts/authorization-lab/report.{json,md}`.
 A reviewer can inspect the case matrix, repeat local tests, and compare
-baseline and fixed behavior. Seven scenarios include five rejected insecure
-operations and two valid controls.
+baseline and fixed behavior. Seven in-memory scenarios include five rejected insecure operations and two valid controls. A separate eight-case local HTTP harness binds only to 127.0.0.1, verifies 401/403/404/200 responses, ignores client-supplied role hints, and checks a fictional one-time approval. Neither constitutes an external penetration test.
 
 ### Assessment method and evidence
 
