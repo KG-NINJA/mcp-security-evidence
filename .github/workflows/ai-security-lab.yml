@@ -50,7 +50,7 @@ jobs:
           npm run build
       - name: Link and verify peer fixture offline
         run: |
-          docker run --rm --network none --entrypoint node -v "$PWD/../dist:/dist:ro" -v "$PWD/../fixtures/verify-example.json:/peer-event.json:ro" -v "$PWD/artifacts:/work/artifacts" ai-security-lab:ci scripts/link-peer-evidence.mjs /peer-event.json
+          docker run --rm --network none --user "$(id -u):$(id -g)" --entrypoint node -v "$PWD/../dist:/dist:ro" -v "$PWD/../fixtures/verify-example.json:/peer-event.json:ro" -v "$PWD/artifacts:/work/artifacts" ai-security-lab:ci scripts/link-peer-evidence.mjs /peer-event.json
           cp artifacts/linked-manifest.json ci-artifacts/peer-link.json
       - name: Stop isolated lab
         if: always()
