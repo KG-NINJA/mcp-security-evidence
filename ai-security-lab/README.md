@@ -6,7 +6,7 @@
 
 ## セットアップと安全な観察
 
-前提: Linux と Docker Engine / Compose。イメージと npm 依存の取得にはネット接続が必要ですが、起動後のラボはネットワーク分離します。Docker イメージのタグは固定、npm 依存は lockfile に固定しています（イメージの digest 固定ではありません）。有料 API は使用しません。
+前提: Linux と Docker Engine / Compose。イメージと npm 依存の取得にはネット接続が必要ですが、起動後のラボはネットワーク分離します。Playwright イメージは digest、npm 依存は lockfile に固定しています。Juice Shop イメージはバージョンタグでの固定であり digest 固定ではありません。有料 API は使用しません。
 
 ```bash
 cd ai-security-lab

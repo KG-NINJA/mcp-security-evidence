@@ -3,12 +3,14 @@ services:
     image: bkimminich/juice-shop:v19.2.1
     network_mode: none
     init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     environment:
       NODE_OPTIONS: --require=/lab-guard/force-loopback.cjs
     volumes:
       - ./scripts/force-loopback.cjs:/lab-guard/force-loopback.cjs:ro
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 5s
       timeout: 3s
       retries: 30

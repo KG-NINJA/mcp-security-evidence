@@ -24,7 +24,9 @@ jobs:
       - name: Build pinned browser image and dependencies
         run: docker build -t ai-security-lab:ci .
       - name: Type check and unit tests
-        run: docker run --rm --network none --entrypoint npm ai-security-lab:ci test
+        run: |
+          docker run --rm --network none --entrypoint npm ai-security-lab:ci run lint
+          docker run --rm --network none --entrypoint npm ai-security-lab:ci test
       - name: Browser integration with synthetic fixture
         run: |
           mkdir -p ci-artifacts
