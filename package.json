@@ -10,7 +10,8 @@
     "sample": "npm run build && node scripts/sample.mjs",
     "dev": "wrangler dev --local",
     "test:interop": "node scripts/verify-interop.mjs",
-    "verify:evidence": "npm run build --silent && node scripts/verify-evidence.mjs"
+    "verify:evidence": "npm run build --silent && node scripts/verify-evidence.mjs",
+    "case-study": "npm run build && node scripts/retest-case-study.mjs"
   },
   "devDependencies": {
     "ajv": "8.17.1",

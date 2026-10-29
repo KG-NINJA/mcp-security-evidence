@@ -25,14 +25,24 @@ async function boundedJson(request: Request): Promise<unknown> {
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
+  let expired = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const deadline = new Promise<never>((_, reject) => { timer = setTimeout(() => { void reader.cancel(); reject(new Error('Body timeout')); }, 2000); });
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      // Cancellation can resolve read() with done:true. Never treat that as
+      // successful completion of a request that reached its deadline.
+      expired = true;
+      reject(new Error('Body timeout'));
+      void reader.cancel().catch(() => undefined);
+    }, 2000);
+  });
   try {
     while (true) {
       const { done, value } = await Promise.race([reader.read(), deadline]);
+      if (expired) throw new Error('Body timeout');
       if (done) break;
       size += value.byteLength;
-      if (size > MAX_BYTES) { await reader.cancel(); throw new Error('Body too large'); }
+      if (size > MAX_BYTES) { void reader.cancel().catch(() => undefined); throw new Error('Body too large'); }
       chunks.push(value);
     }
     const bytes = new Uint8Array(size);
