@@ -20,5 +20,26 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run case-study
+      - run: npm run lab:authz
+      - run: npm run lab:http
+      - run: node scripts/practitioner-complete.mjs
+      - run: npm run portfolio:verify
       - run: npm run sample
       - run: npx --no-install wrangler deploy --dry-run --outdir /tmp/mcp-worker-build
+      - name: Preserve sanitized synthetic portfolio reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: synthetic-security-portfolio
+          path: |
+            artifacts/security-case-study/report.json
+            artifacts/security-case-study/report.md
+            artifacts/authorization-lab/report.json
+            artifacts/authorization-lab/report.md
+            artifacts/http-lab/report.json
+            artifacts/http-lab/report.md
+            artifacts/practitioner/results.json
+            artifacts/practitioner/report.md
+            artifacts/practitioner/index.html
+            artifacts/practitioner/manifest.json
+          if-no-files-found: error
+          retention-days: 30
