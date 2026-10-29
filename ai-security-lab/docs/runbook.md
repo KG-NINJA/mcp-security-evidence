@@ -2,7 +2,7 @@
 
 ## 1. 安全確認
 
-Docker イメージ・npm パッケージは初回に取得します。環境のネットワークポリシーが許可しない場合は設定を迂回せず停止します。実行中の `juice` に `ports:` を設定したり、ホストネットワークを共有したりしません。`docker compose ps` で公開ポートがないことを確認します。コンテナ外の実サービスや実資格情報は使いません。
+Docker イメージ・npm パッケージは初回に取得します。環境のネットワークポリシーが許可しない場合は設定を迂回せず停止します。`LAB_UID` / `LAB_GID` は README の通り操作者の UID/GID に設定し、その操作者だけが書ける保存先を使用します。実行中の `juice` に `ports:` を設定したり、ホストネットワークを共有したりしません。`docker compose ps` で公開ポートがないことを確認します。コンテナ外の実サービスや実資格情報は使いません。
 
 上位 README の手順で `observe` → `plan` → `verify` を実行し、`artifacts/report.md` の `approval: pending`, `execution: not_run`, `evaluation: not_verified` を確認します。これは安全な受動デモであり、チャレンジ達成ではありません。
 

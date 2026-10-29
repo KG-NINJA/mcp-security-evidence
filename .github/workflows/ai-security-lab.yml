@@ -33,6 +33,7 @@ jobs:
           docker run --rm --network none --entrypoint npm -v "$PWD/ci-artifacts:/work/ci-artifacts" ai-security-lab:ci run test:browser
       - name: Passive Juice Shop demonstration
         run: |
+          export LAB_UID="$(id -u)" LAB_GID="$(id -g)"
           mkdir -p artifacts approvals
           docker compose up -d juice
           docker compose run --rm agent observe

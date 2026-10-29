@@ -10,6 +10,7 @@
 
 ```bash
 cd ai-security-lab
+export LAB_UID="$(id -u)" LAB_GID="$(id -g)"
 mkdir -p artifacts approvals
 chmod 700 artifacts approvals
 docker compose build agent

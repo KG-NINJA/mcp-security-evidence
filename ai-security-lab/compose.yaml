@@ -18,6 +18,7 @@ services:
   agent:
     build: .
     network_mode: service:juice
+    user: "${LAB_UID:-1000}:${LAB_GID:-1000}"
     depends_on:
       juice:
         condition: service_healthy
