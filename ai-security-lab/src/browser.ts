@@ -25,8 +25,13 @@ export async function withDeadline<T>(work: () => Promise<T>, timeout: number, o
 }
 
 export class GuardedBrowser {
-  private constructor(private browser: Browser, private context: BrowserContext, readonly page: Page,
-    readonly stats: {blocked: number; responses: Observation['responses']; requests: number}) {}
+  readonly #browser:Browser;
+  readonly #context:BrowserContext;
+  readonly #page:Page;
+  private constructor(browser: Browser, context: BrowserContext, page: Page,
+    readonly stats: {blocked: number; responses: Observation['responses']; requests: number}) {
+    this.#browser=browser; this.#context=context; this.#page=page;
+  }
   static async open(): Promise<GuardedBrowser> {
     assertNetworkIsolation(); assertLoopbackListener();
     const browser = await chromium.launch({headless:true, args:['--disable-background-networking','--disable-quic','--disable-sync','--disable-domain-reliability','--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1']});
@@ -39,7 +44,13 @@ export class GuardedBrowser {
         if (stats.requests > 150 || !allowedRequest(req.url(),req.method(),req.redirectedFrom() !== null)) {
           stats.blocked++; await route.abort('blockedbyclient'); return;
         }
-        await route.continue();
+        // route.continue() does NOT re-invoke the handler for redirected requests.
+        // Fetch exactly one hop; never pass a 3xx back to the browser.
+        try {
+          const response=await route.fetch({maxRedirects:0,timeout:4000});
+          if(response.status() >= 300 && response.status() < 400){stats.blocked++;await route.abort('blockedbyclient');return;}
+          await route.fulfill({response});
+        } catch {stats.blocked++;await route.abort('failed').catch(()=>undefined);}
       });
       // Never connect a WebSocket to a server. Service workers are disabled above.
       await context.routeWebSocket('**/*', ws => { ws.close(); stats.blocked++; });
@@ -56,18 +67,18 @@ export class GuardedBrowser {
       return new GuardedBrowser(browser,context,page,stats);
     } catch (error) { await browser.close(); throw error; }
   }
-  async close(): Promise<void> { await this.context.close().catch(()=>undefined); await this.browser.close().catch(()=>undefined); }
+  async close(): Promise<void> { await this.#context.close().catch(()=>undefined); await this.#browser.close().catch(()=>undefined); }
   async load(): Promise<void> {
-    const response = await this.page.goto(ORIGIN+'/',{waitUntil:'domcontentloaded',timeout:8000});
+    const response = await this.#page.goto(ORIGIN+'/',{waitUntil:'domcontentloaded',timeout:8000});
     if (!response || response.status() < 200 || response.status() >= 300 || !allowedRequest(response.url(),'GET',false)) throw new Error('INITIAL_PAGE_UNAVAILABLE');
   }
   async inspect(dir: string): Promise<Observation> {
     return withDeadline(async () => {
       await this.load();
-      await this.page.locator('button,[role="button"]').first().waitFor({state:'visible',timeout:5000}).catch(()=>undefined);
+      await this.#page.locator('button,[role="button"]').first().waitFor({state:'visible',timeout:5000}).catch(()=>undefined);
       const ui: UiElement[] = [];
       for (const role of ['button','link','textbox'] as const) {
-        const matches = this.page.getByRole(role); const count = Math.min(await matches.count(), 25);
+        const matches = this.#page.getByRole(role); const count = Math.min(await matches.count(), 25);
         for (let i=0;i<count && ui.length<50;i++) {
           const el=matches.nth(i);
           if (!(await el.isVisible())) continue;
@@ -76,7 +87,7 @@ export class GuardedBrowser {
         }
       }
       await mkdir(dir,{recursive:true,mode:0o700});
-      const file=join(dir,'screenshot.png'); await this.page.screenshot({path:file,animations:'disabled',timeout:4000});
+      const file=join(dir,'screenshot.png'); await this.#page.screenshot({path:file,animations:'disabled',timeout:4000});
       return {schema:'ai-security-lab-observation/v1',observedAt:new Date().toISOString(),target:ORIGIN,ui,responses:this.stats.responses.map(x=>({...x})),blockedRequests:this.stats.blocked,screenshotSha256:sha256(await readFile(file))};
     },15000,()=>this.close());
   }
@@ -98,11 +109,11 @@ export class GuardedBrowser {
   async #click(plan: Plan): Promise<void> {
     return withDeadline(async () => {
       await this.load();
-      await this.page.locator('button,[role="button"]').first().waitFor({state:'visible',timeout:5000}).catch(()=>undefined);
-      const button=this.page.getByRole('button',{name:plan.action.name,exact:true});
+      await this.#page.locator('button,[role="button"]').first().waitFor({state:'visible',timeout:5000}).catch(()=>undefined);
+      const button=this.#page.getByRole('button',{name:plan.action.name,exact:true});
       if ((await button.count()) !== 1 || !(await button.isVisible())) throw new Error('BUTTON_NOT_UNIQUE_OR_VISIBLE');
       await button.click({timeout:4000,noWaitAfter:true});
-      await this.page.waitForTimeout(500);
+      await this.#page.waitForTimeout(500);
     },15000,()=>this.close());
   }
 }

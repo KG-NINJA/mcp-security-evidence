@@ -13,9 +13,10 @@ import {makeReport,verifyReport} from '../dist/evidence.js';
 import {ORIGIN} from '../dist/scope.js';
 
 await test('synthetic browser fixture: observe, block egress and redirect, approve once, evaluate and seal',async()=>{
- let clicked=false,wrongPort=0,redirectTarget=0;
+ let clicked=false,wrongPort=0,redirectTarget=0,redirectRoot='';
  const fixture=createServer((req,res)=>{
    if(req.url==='/'){
+     if(redirectRoot){res.writeHead(302,{location:redirectRoot});return res.end();}
      res.writeHead(200,{'content-type':'text/html'});
      return res.end('<!doctype html><title>Synthetic fixture</title><button onclick="fetch(\'/clicked\')">Inspect synthetic panel</button><img src="http://127.0.0.1:3001/blocked" alt="">');
    }
@@ -49,7 +50,12 @@ await test('synthetic browser fixture: observe, block egress and redirect, appro
    assert.equal(await readChallenge(7),true);
    const evaluation=evaluateTransition(7,false,true);assert.equal(evaluation.status,'verified');
    await assert.rejects(consumeApproval(plan,join(dir,'approvals')),/APPROVAL_REPLAY/);
-   await assert.rejects(browser.page.goto(ORIGIN+'/redirect',{timeout:5000}));assert.equal(redirectTarget,0);
+   await browser.close();browser=undefined;
+   redirectRoot='/redirect-target';browser=await GuardedBrowser.open();
+   await assert.rejects(browser.inspect(dir));assert.equal(redirectTarget,0);
+   await browser.close();browser=undefined;
+   redirectRoot='http://127.0.0.1:3001/blocked';browser=await GuardedBrowser.open();
+   await assert.rejects(browser.inspect(dir));assert.equal(wrongPort,0);
    const report=makeReport({mode:'approved',target:ORIGIN,observation,plan,approval:'consumed',execution:'completed',evaluation});
    report.limitations.push('Synthetic fixture and synthetic test decision; not a human-approved Juice Shop exercise.');
    // Regenerate rather than publish a modified, invalid envelope.
