@@ -82,6 +82,9 @@ export async function startMcpLab(profile = 'fixed', requestLimit = 128) {
       if (req.headers['content-type']?.split(';')[0] !== 'application/json') return deny(415, 'JSON_REQUIRED');
       if (!req.headers.accept?.includes('application/json') || !req.headers.accept?.includes('text/event-stream')) return deny(406, 'ACCEPT_REQUIRED');
       const message = await readBody(req);
+      // DELETE or expiry may invalidate the session while the body is in flight.
+      // No await separates this recheck from dispatch and any state mutation.
+      if (sessionId && (sessions.get(sessionId) !== session || session.actor !== actor || session.expires <= clock)) return deny(404, 'SESSION_NOT_FOUND');
       if (!plain(message) || message.jsonrpc !== '2.0' || typeof message.method !== 'string' ||
           (message.id !== undefined && !(typeof message.id === 'string' || Number.isSafeInteger(message.id))) ||
           (message.params !== undefined && !plain(message.params))) return deny(400, 'INVALID_RPC');
@@ -132,12 +135,13 @@ export async function startMcpLab(profile = 'fixed', requestLimit = 128) {
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   host = '127.0.0.1:' + server.address().port;
   const trace = [];
-  const wire = (body, { actor = 'reader', session, headers = {}, method = 'POST', raw, unfinished = false } = {}) => new Promise((resolve, reject) => {
+  const wire = (body, { actor = 'reader', session, headers = {}, method = 'POST', raw, unfinished = false, beforeBodyEnd } = {}) => new Promise((resolve, reject) => {
     const payload = raw ?? JSON.stringify(body);
     // Hostname, address family, port and path are fixed by this closure; no redirects/DNS/URL input.
     const req = httpRequest({ hostname: '127.0.0.1', family: 4, port: server.address().port, path: '/mcp', method,
       headers: { authorization: 'Bearer ' + (tokens[actor] ?? 'invalid'), 'content-type': 'application/json', accept: 'application/json, text/event-stream',
-        ...(session ? { 'mcp-session-id': session, 'mcp-protocol-version': PROTOCOL } : {}), ...headers } }, res => {
+        ...(session ? { 'mcp-session-id': session, 'mcp-protocol-version': PROTOCOL } : {}),
+        ...(beforeBodyEnd ? { expect: '100-continue' } : {}), ...headers } }, res => {
       const chunks = []; let size = 0;
       res.on('data', b => { if ((size += b.length) > 65536) req.destroy(new Error('RESPONSE_LIMIT')); else chunks.push(b); });
       res.once('end', () => {
@@ -151,7 +155,15 @@ export async function startMcpLab(profile = 'fixed', requestLimit = 128) {
       res.once('error', reject);
     });
     req.setTimeout(4000, () => req.destroy(new Error('CLIENT_DEADLINE'))); req.once('error', reject);
-    if (unfinished) req.write(payload); else req.end(payload);
+    if (beforeBodyEnd) {
+      // The server has dispatched the request before this handshake reaches the client.
+      // Hold the body open while a test deletes/expires its already-checked session.
+      req.once('continue', async () => {
+        try { req.write(payload.slice(0, 1)); await beforeBodyEnd(); req.end(payload.slice(1)); }
+        catch (error) { req.destroy(error); }
+      });
+      req.flushHeaders();
+    } else if (unfinished) req.write(payload); else req.end(payload);
   });
   const initialize = async (actor = 'reader', notify = true) => {
     const r = await wire({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: 'local-test', version: '1' } } }, { actor });
