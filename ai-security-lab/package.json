@@ -1,0 +1,16 @@
+{
+  "name": "ai-security-lab-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22.13"},
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:browser": "npm run build && node --test test/browser.integration.mjs",
+    "lab": "node dist/cli.js"
+  },
+  "dependencies": {"playwright": "1.62.1"},
+  "devDependencies": {"@types/node": "25.9.5", "typescript": "5.9.3"}
+}
