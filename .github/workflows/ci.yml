@@ -21,5 +21,6 @@ jobs:
       - run: npm test
       - run: npm run case-study
       - run: npm run lab:authz
+      - run: npm run lab:http
       - run: npm run sample
       - run: npx --no-install wrangler deploy --dry-run --outdir /tmp/mcp-worker-build
