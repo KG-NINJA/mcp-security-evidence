@@ -13,7 +13,9 @@
     "verify:evidence": "npm run build --silent && node scripts/verify-evidence.mjs",
     "case-study": "npm run build && node scripts/retest-case-study.mjs",
     "lab:authz": "npm run build && node scripts/authorization-lab.mjs",
-    "lab:http": "npm run build && node scripts/loopback-authz-lab.mjs"
+    "lab:http": "npm run build && node scripts/loopback-authz-lab.mjs",
+    "portfolio:complete": "npm test && node scripts/practitioner-complete.mjs && node scripts/portfolio-bundle.mjs verify",
+    "portfolio:verify": "node scripts/portfolio-bundle.mjs verify"
   },
   "devDependencies": {
     "ajv": "8.17.1",
