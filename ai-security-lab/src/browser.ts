@@ -2,13 +2,17 @@ import { chromium, type Browser, type BrowserContext, type Page, type Response }
 import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { allowedRequest, assertNetworkIsolation, assertLoopbackListener, ORIGIN } from './scope.js';
-import { sha256, type Observation, type UiElement, type Plan } from './model.js';
+import { sha256, validatePlan, type Observation, type UiElement, type Plan } from './model.js';
 import { consumeApproval } from './approval.js';
 import { readChallenge, evaluateTransition, type Evaluation } from './evaluator.js';
 
 const RESOURCE_TYPES = new Set(['document','stylesheet','image','media','font','script','xhr','fetch','other']);
 const CONTENT_TYPES = new Set(['text/html','application/json','text/css','application/javascript','text/javascript','image/png','image/jpeg','image/svg+xml','image/webp','font/woff2']);
 const LABEL_LIMIT = 80;
+export function assertActionDeadline(plan: Plan, approvalExpiresAt: string, now = Date.now()): void {
+  validatePlan(plan, now);
+  if (Date.parse(approvalExpiresAt) <= now) throw new Error('APPROVAL_EXPIRED');
+}
 function sanitizeLabel(value: string): string {
   return value.replace(/\b[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g,'[email]')
     .replace(/\b(?:bearer\s+)?[a-zA-Z0-9_-]{24,}\b/gi,'[redacted]')
@@ -100,18 +104,19 @@ export class GuardedBrowser {
     try {
       if(id!==null)before=await readChallenge(id);
       browser=await GuardedBrowser.open();
-      await browser.#click(plan); execution='completed';
+      await browser.#click(plan, approval.expiresAt); execution='completed';
       if(id!==null)after=await readChallenge(id);
     } catch { execution='failed'; }
     finally { await browser?.close(); }
     return {execution,evaluation:execution==='completed'?evaluateTransition(id,before,after):evaluateTransition(id,before,null),approvalGrantedAt:approval.grantedAt};
   }
-  async #click(plan: Plan): Promise<void> {
+  async #click(plan: Plan, approvalExpiresAt: string): Promise<void> {
     return withDeadline(async () => {
       await this.load();
       await this.#page.locator('button,[role="button"]').first().waitFor({state:'visible',timeout:5000}).catch(()=>undefined);
       const button=this.#page.getByRole('button',{name:plan.action.name,exact:true});
       if ((await button.count()) !== 1 || !(await button.isVisible())) throw new Error('BUTTON_NOT_UNIQUE_OR_VISIBLE');
+      assertActionDeadline(plan, approvalExpiresAt);
       await button.click({timeout:4000,noWaitAfter:true});
       await this.#page.waitForTimeout(500);
     },15000,()=>this.close());

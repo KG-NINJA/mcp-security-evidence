@@ -8,7 +8,15 @@ import {spawnSync} from 'node:child_process';
 import {consumeApproval} from '../dist/approval.js';
 import {makePlan,planHash,validatePlan} from '../dist/model.js';
 import {ORIGIN} from '../dist/scope.js';
+import {assertActionDeadline} from '../dist/browser.js';
 const obs={schema:'ai-security-lab-observation/v1',target:ORIGIN,ui:[{role:'button',name:'Synthetic button'}]};
+await test('approval and plan remain valid immediately before the click',()=>{
+ const now=Date.now(); const plan=makePlan(obs,undefined,now);
+ const expiry=new Date(now+5000).toISOString();
+ assert.doesNotThrow(()=>assertActionDeadline(plan,expiry,now+4999));
+ assert.throws(()=>assertActionDeadline(plan,expiry,now+5000),/APPROVAL_EXPIRED/);
+ assert.throws(()=>assertActionDeadline(plan,new Date(now+20*60_000).toISOString(),now+15*60_000),/PLAN_EXPIRED/);
+});
 async function directory(){return mkdtemp(join(tmpdir(),'lab-approval-'));}
 async function syntheticApproval(plan,dir,now){
  await mkdir(dir,{recursive:true});
