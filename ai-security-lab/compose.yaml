@@ -1,0 +1,32 @@
+services:
+  juice:
+    image: bkimminich/juice-shop:v19.2.1
+    network_mode: none
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      NODE_OPTIONS: --require=/lab-guard/force-loopback.cjs
+    volumes:
+      - ./scripts/force-loopback.cjs:/lab-guard/force-loopback.cjs:ro
+    healthcheck:
+      test: ["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+  agent:
+    build: .
+    network_mode: service:juice
+    user: "${LAB_UID:-1000}:${LAB_GID:-1000}"
+    depends_on:
+      juice:
+        condition: service_healthy
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 1g
+    volumes:
+      - ./artifacts:/work/artifacts
+      - ./approvals:/work/approvals

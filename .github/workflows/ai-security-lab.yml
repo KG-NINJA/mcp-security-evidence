@@ -1,0 +1,66 @@
+name: AI Security Lab (isolated)
+on:
+  pull_request:
+    paths:
+      - 'ai-security-lab/**'
+      - '.github/workflows/ai-security-lab.yml'
+  push:
+    paths:
+      - 'ai-security-lab/**'
+      - '.github/workflows/ai-security-lab.yml'
+permissions:
+  contents: read
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ai-security-lab
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build pinned browser image and dependencies
+        run: docker build -t ai-security-lab:ci .
+      - name: Type check and unit tests
+        run: |
+          docker run --rm --network none --entrypoint npm ai-security-lab:ci run lint
+          docker run --rm --network none --entrypoint npm ai-security-lab:ci test
+      - name: Browser integration with synthetic fixture
+        run: |
+          mkdir -p ci-artifacts
+          docker run --rm --network none --entrypoint npm -v "$PWD/ci-artifacts:/work/ci-artifacts" ai-security-lab:ci run test:browser
+      - name: Passive Juice Shop demonstration
+        run: |
+          export LAB_UID="$(id -u)" LAB_GID="$(id -g)"
+          mkdir -p artifacts approvals
+          docker compose up -d juice
+          docker compose run --rm agent observe
+          docker compose run --rm agent plan
+          docker compose run --rm agent verify
+          docker run --rm --network none --entrypoint node -v "$PWD/artifacts:/work/artifacts:ro" -v "$PWD/ci-artifacts:/work/ci-artifacts" ai-security-lab:ci scripts/sanitize-ci.mjs
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Build existing offline evidence verifier
+        working-directory: .
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+      - name: Link and verify peer fixture offline
+        run: |
+          docker run --rm --network none --user "$(id -u):$(id -g)" --entrypoint node -v "$PWD/../dist:/dist:ro" -v "$PWD/../fixtures/verify-example.json:/peer-event.json:ro" -v "$PWD/artifacts:/work/artifacts" ai-security-lab:ci scripts/link-peer-evidence.mjs /peer-event.json
+          cp artifacts/linked-manifest.json ci-artifacts/peer-link.json
+      - name: Stop isolated lab
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+      - name: Upload sanitized evidence only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ai-security-lab-sanitized-evidence
+          path: |
+            ai-security-lab/ci-artifacts/*.json
+            ai-security-lab/ci-artifacts/*.md
+          if-no-files-found: error
+          retention-days: 14
