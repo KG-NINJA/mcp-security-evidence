@@ -81,13 +81,19 @@ export class GuardedBrowser {
       await this.load();
       await this.#page.locator('button,[role="button"]').first().waitFor({state:'visible',timeout:5000}).catch(()=>undefined);
       const ui: UiElement[] = [];
+      // Snapshot each role's elements in one browser evaluation. A live SPA can
+      // remove a button between count() and nth(i), otherwise causing timeouts.
       for (const role of ['button','link','textbox'] as const) {
-        const matches = this.#page.getByRole(role); const count = Math.min(await matches.count(), 25);
-        for (let i=0;i<count && ui.length<50;i++) {
-          const el=matches.nth(i);
-          if (!(await el.isVisible())) continue;
-          const name = sanitizeLabel(await el.evaluate(node => node.getAttribute('aria-label') || node.getAttribute('title') || (node instanceof HTMLInputElement ? '' : node.textContent || '')));
-          ui.push({role,name});
+        const snapshots = await this.#page.getByRole(role).evaluateAll(elements =>
+          elements.slice(0,25).map(node => ({
+            visible: node.getClientRects().length > 0 && getComputedStyle(node).visibility === 'visible',
+            name: node.getAttribute('aria-label') || node.getAttribute('title') ||
+              (node instanceof HTMLInputElement ? '' : node.textContent || '')
+          }))
+        );
+        for (const item of snapshots) {
+          if (ui.length >= 50) break;
+          if (item.visible) ui.push({role,name:sanitizeLabel(item.name)});
         }
       }
       await mkdir(dir,{recursive:true,mode:0o700});
